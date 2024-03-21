@@ -1,0 +1,3 @@
+supabase
+discord.py
+python-dotenv
