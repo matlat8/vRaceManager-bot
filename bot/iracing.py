@@ -10,7 +10,7 @@ import json
 class iRacing:
     def __init__(self):
         self.cookies = None
-        self.authenticate()
+        #self.authenticate()
     
     async def authenticate(self):
         
@@ -53,7 +53,7 @@ class iRacing:
                     return await self.get_driver(driver_id)
                 else:
                     print(f"Failed to get driver: {await response.json()}")
-                    return {}  # Return an empty dictionary if the request fails
+                    return {} 
                 
     async def does_driver_exist(self, driver_id) -> bool: 
         """Check if a driver exists in the iRacing database

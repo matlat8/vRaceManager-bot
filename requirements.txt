@@ -1,3 +1,5 @@
 supabase
 discord.py
 python-dotenv
+asynctest
+pytest
