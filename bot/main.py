@@ -30,7 +30,7 @@ async def setup(bot):
 #bot.run(TOKEN)
 
 async def setup():
-    bot = commands.Bot(command_prefix='?', intents=intents)
+    bot = commands.Bot(command_prefix=os.environ.get('DISCORD_COMMAND_PREFIX'), intents=intents)
     await bot.add_cog(Stats(bot))
     return bot
 
