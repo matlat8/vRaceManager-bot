@@ -62,13 +62,16 @@ class RegisterDriverCommand(Command):
     
 
 @commands.command()
-async def driver(ctx, action: str, *args: str):
+async def driver(ctx, *args: str):
     ir = iRacing()
     supa = Supa(os.environ.get('SUPABASE_URL'), os.environ.get('SUPABASE_KEY')).get_supabase()
     command = RegisterDriverCommand(ir, supa)
-
-    if action == 'register':
-        await command.execute(ctx, args[0])
+    
+    if not args:
+        await ctx.send(embed=await command.return_help_message())
+        return
+    if args[0] == 'register':
+        await command.execute(ctx, args[1])
     else:
         await ctx.send(embed=await command.return_help_message())
     
