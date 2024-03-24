@@ -9,21 +9,11 @@ import driver as driver
 from cogs.stats import Stats
 from version import __version__
 
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
+#load_dotenv()
+TOKEN = os.environ.get('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
 intents.message_content = True
-
-#bot = commands.Bot(intents=intents, command_prefix=os.environ.get('DISCORD_COMMAND_PREFIX'))
-
-## Add other commands
-#bot.add_cog(Stats(bot))
-
-
-
-
-#bot.run(TOKEN)
 
 async def setup():
     activity = discord.Activity(name=f"{os.environ.get('DISCORD_COMMAND_PREFIX')}driver help - v{__version__}", type=discord.ActivityType.listening)

@@ -40,6 +40,8 @@ class RegisterDriverCommand(Command):
         
         print(driver)
         
+        
+        
         existing_driver = None #self.supa.table('drivers').select().eq('guild_id', ctx.guild.id).eq('discord_user_id', ctx.author.id).execute()
         
         if existing_driver:
@@ -53,6 +55,11 @@ class RegisterDriverCommand(Command):
                                     "iracing_number": iracing_number,
                                     "driver_name": driver[0]["display_name"]
                                 }).execute()
+            try:
+                await ctx.author.edit(nick=driver[0]["display_name"])
+            except discord.errors.Forbidden as e:
+                print(e)
+                await ctx.send('I do not have permission to change your nickname.')
             await ctx.send('Driver registered.')
             
     async def return_help_message(self):
