@@ -39,10 +39,19 @@ class iRacing:
                         print(f"Failed to click through URL: {response.status}")
                         return {}
     
-    async def get_driver(self, driver_id):
+    async def get_driver(self, search_term):
+        """gets basic driver information from iRacing's API
+        using either their iRacing ID or their name
+
+        Args:
+            search_term (str): iRacing ID or driver name
+
+        Returns:
+            json: json object containing driver information
+        """
         self.cookies = self.cookies or {}
         async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
-            async with session.get(f'https://members-ng.iracing.com/data/lookup/drivers?search_term={driver_id}') as response:
+            async with session.get(f'https://members-ng.iracing.com/data/lookup/drivers?search_term={search_term}') as response:
                 
                 if response.status == 200:
                     data_json = await self.click_thru_url(await response.json())
@@ -50,10 +59,20 @@ class iRacing:
                     
                 if response.status == 401:
                     await self.authenticate()
-                    return await self.get_driver(driver_id)
+                    return await self.get_driver(search_term)
                 else:
                     print(f"Failed to get driver: {await response.json()}")
                     return {} 
+                
+    async def get_driver_profile(self, cust_id):
+        async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
+            async with session.get(f'https://members-ng.iracing.com/data/member/profile?cust_id={cust_id}') as response:
+                if response.status == 200:
+                    data_json = await self.click_thru_url(await response.json())
+                    return data_json
+                else:
+                    print(f"Failed to get driver profile: {response.status}")
+                    return {}
                 
     async def does_driver_exist(self, driver_id) -> bool: 
         """Check if a driver exists in the iRacing database
