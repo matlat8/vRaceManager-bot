@@ -30,3 +30,6 @@ SUPABASE_KEY=
 IRACING_USERNAME={this is your iracing email address}
 IRACING_PASSWORD={iracing password}
 ```
+
+-----
+Join the racing team helping me develop and build out this bot and its capabilities. [PUR iRacing Community](https://discord.gg/BcK7hUuNcj)
