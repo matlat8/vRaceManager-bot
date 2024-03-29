@@ -102,7 +102,7 @@ class Events(commands.Cog):
         print(f"{arrow.utcnow().format('YYYY-MM-DD HH:mm:ss')} - Start of official race data pull.")
         drivers = self.supa.table('v_distinct_drivers').select('*').execute()
         end_time = arrow.utcnow().format('YYYY-MM-DDTHH:mm:ss') + 'Z'
-        start_time = arrow.utcnow().shift(minutes=-30).format('YYYY-MM-DDTHH:mm:ss') + 'Z'
+        start_time = arrow.utcnow().shift(minutes=-50).format('YYYY-MM-DDTHH:mm:ss') + 'Z'
         insert_data = []
         iterations = 0
         for driver in drivers.data:
@@ -174,7 +174,7 @@ class Events(commands.Cog):
     async def send_race_completion_message(self, session):
         guild_ids = self.supa.table('drivers').select('guild_id').eq('iracing_number', session['cust_id']).execute()
         is_notified = self.supa.table('series_entries').select('is_notified').eq('subsession_id', session['subsession_id']).execute()
-        if is_notified.data and is_notified.data[0]['is_notified'] == False:
+        if is_notified.data and (is_notified.data[0]['is_notified'] == False or is_notified.data[0]['is_notified'] is None):
             for guild in guild_ids.data:
                 channel_id = self.supa.table('guilds').select('official_channel_id').eq('guild_id', guild['guild_id']).execute()
                 if not channel_id.data:
