@@ -32,8 +32,10 @@ class Events(commands.Cog):
             milliseconds = time_delta.microseconds // 1000
             
             
-            embed = discord.Embed(title=f"{data['series_name']} - {data['subsession_id']}", description="A session has been completed.", color=0x00ff00)
+            embed = discord.Embed(title=f"{data['series_name']} - {data['subsession_id']}", color=0x00ff00)
+            
             embed.set_author(name=data['display_name'], icon_url='https://imgresizer.eurosport.com/unsafe/2560x1440/filters:format(jpeg)/origin-imgresizer.eurosport.com/2016/09/08/1928257-40560625-2560-1440.jpg')
+            
             embed.add_field(name="Series", value=data['series_name'], inline=False)
             embed.add_field(name="Track", value=f"{data['track']['track_name']} - {data['track']['config_name']}", inline=False)
             embed.add_field(name="Start Time", value=start_time, inline=True)
@@ -41,6 +43,11 @@ class Events(commands.Cog):
             embed.add_field(name='Winner', value=f"{data['winner_name']}", inline=False)
             embed.add_field(name="Position", value=f"{data['starting_position']} -> {data['finish_position']} ({'+' if pos_plusneg > 0 else ''}{pos_plusneg})", inline=True)
             embed.add_field(name="Fastest Lap", value=f"{minutes}:{seconds:02}.{milliseconds:03}", inline = True)
+            embed.add_field(name="SoF", value=data['event_strength_of_field'], inline=True)
+            embed.add_field(name='Laps', value=data['laps_complete'], inline = True)
+            embed.add_field(name='Led Laps', value=data['laps_led'], inline = True)
+            embed.add_field(name='Incidents', value=data['incidents'], inline = True)
+            
             embed.set_footer(text=f"Subsession ID: {data['subsession_id']} - Current UTC: {arrow.utcnow().format('YYYY-MM-DD HH:mm')}")
             return embed
         
@@ -48,7 +55,7 @@ class Events(commands.Cog):
     @commands.command()
     async def setnotificationchannel(self, ctx, *args):
         
-        notification_options = ['hosted','offical']
+        notification_options = ['hosted','official']
         
         if not args:
             await ctx.send(f'You must provide a notification type. Valid types: {", ".join(notification_options)}')
@@ -58,7 +65,7 @@ class Events(commands.Cog):
             await ctx.send(f'Invalid notification type. Valid types: {", ".join(notification_options)}')
             return
         
-        self.supa.table('guilds').insert({
+        self.supa.table('guilds').update({
             f'{args[0]}_channel_id': ctx.channel.id
         }).eq('guild_id', ctx.guild.id).execute()
         await ctx.send(f'{args[0]} notifcation channel set to {ctx.channel.name}')
@@ -90,12 +97,12 @@ class Events(commands.Cog):
         pass
 
     #@commands.command()
-    @tasks.loop(seconds=0, minutes=2, hours= 0, count=None)
+    @tasks.loop(seconds=0, minutes=4, hours= 0, count=None)
     async def search_for_events(self):
         print(f"{arrow.utcnow().format('YYYY-MM-DD HH:mm:ss')} - Start of official race data pull.")
         drivers = self.supa.table('v_distinct_drivers').select('*').execute()
         end_time = arrow.utcnow().format('YYYY-MM-DDTHH:mm:ss') + 'Z'
-        start_time = arrow.utcnow().shift(minutes=-50).format('YYYY-MM-DDTHH:mm:ss') + 'Z'
+        start_time = arrow.utcnow().shift(minutes=-30).format('YYYY-MM-DDTHH:mm:ss') + 'Z'
         insert_data = []
         iterations = 0
         for driver in drivers.data:
@@ -107,7 +114,7 @@ class Events(commands.Cog):
             for obj in data:
                 for session in obj:
                     if session['event_type'] == 5:
-                        print(json.dumps(session, indent=4))
+                        #print(json.dumps(session, indent=4))
                         session['cust_id'] = driver['iracing_number']
                         session['display_name'] = driver['driver_name']
                         insert_data.append(session)
