@@ -123,7 +123,7 @@ class Events(commands.Cog):
             }
             final_insert.append(row)
         
-        if not final_insert:
+        if final_insert:
             data = self.supa.table('series_entries').upsert(final_insert).execute()
             print(data)
             
