@@ -1,5 +1,5 @@
 supabase
-discord.py
+discord.py==2.3.2
 python-dotenv
 asynctest
 pytest

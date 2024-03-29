@@ -6,7 +6,12 @@ import arrow
 from supa import Supa
 from iracing import iRacing
 
-    
+
+
+class Driver(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot    
+        self.command = RegisterDriverCommand()
     
 class Command:
     def execute(self, ctx, *args):
@@ -81,7 +86,15 @@ class RegisterDriverCommand(Command):
         print(driver)
         await self.ctx.send(embed=embed)
     
-    async def perform_lookup(self, ctx, search_term):
+    async def recent_events(self, ctx, args):
+        if args[1].lower() == 'week':
+            end_date = arrow.utcnow()#.format('YYYY-MM-DD HH:mm:ss')
+            start_date = arrow.utcnow().shift(weeks=-1)#.format('YYYY-MM-DD HH:mm:ss')
+            print(f'End Date: {start_date}')
+        search_term = ' '.join(args[2:])
+        driver_data = await self.iracing.get_driver(search_term)
+        cust_id = driver_data[0]["cust_id"]
+        events = await self.iracing.get_events(cust_id, start_date, end_date)
         pass
         
     class Embed:
@@ -116,17 +129,16 @@ class RegisterDriverCommand(Command):
             embed.add_field(name="Register", value=register_value, inline=False)
             return embed
     
-class Driver():
-    def __init__(self, iracing, supa):
-        self.iracing = iracing
-        self.supa = supa
-    
 
 
 
 @commands.command()
 async def driver(ctx, *args: str):
     command = RegisterDriverCommand(ctx)
+    
+    # ignore msg if sent from bot
+    if ctx.author.bot:
+        return
     
     # no args are present
     if not args:
@@ -140,6 +152,9 @@ async def driver(ctx, *args: str):
         lookup_string = ' '.join(args[1:])
         await command.lookup(lookup_string)
         #await ctx.send('Lookup command not implemented yet.')
+    if args[0] == 'events':
+        await command.recent_events(ctx, args)
+        #await command.recent_events(ctx, lookup_string)
     else:
         await ctx.send(embed=await command.Embed().return_help_message())
     
