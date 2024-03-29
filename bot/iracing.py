@@ -88,6 +88,7 @@ class iRacing:
             async with session.get(f'https://members-ng.iracing.com/data/member/profile?cust_id={cust_id}') as response:
                 if response.status == 200:
                     data_json = await self.click_thru_url(await response.json())
+                    print(data_json)
                     return data_json
                 else:
                     print(f"Failed to get driver profile: {response.status}")
@@ -124,13 +125,14 @@ class iRacing:
         async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
             params = {
                 'cust_id': cust_id,
-                'finish_range_begin': start_time.format('YYYY-MM-DDTHH:mm:ssZZ'),
-                'finish_range_end': end_time.format('YYYY-MM-DDTHH:mm:ssZZ')
+                'finish_range_begin': start_time,#.format('YYYY-MM-DDTHH:mm:ssZZ'),
+                'finish_range_end': end_time#.format('YYYY-MM-DDTHH:mm:ssZZ')
             }
             async with session.get('https://members-ng.iracing.com/data/results/search_series', params=params) as response:
                 if response.status == 200:
                     json_response = await response.json()
                     data = await self.unchunk_url(json_response['data']['chunk_info'])
+                    #print(data)
                     return data
                 if response.status == 401:
                     await self.authenticate()
