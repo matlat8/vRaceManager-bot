@@ -51,6 +51,32 @@ class Events(commands.Cog):
             embed.set_footer(text=f"Subsession ID: {data['subsession_id']} - Current UTC: {arrow.utcnow().format('YYYY-MM-DD HH:mm')}")
             return embed
         
+        def latest_race(self, race: json):
+            """Create an embed that can be returned and sent in a discord channel
+
+            Args:
+                race (json): API Payload from member_recent_races API endpoint
+            """
+            print(json.dumps(race, indent=4))
+            start_time = arrow.get(race['session_start_time']).format('YYYY-MM-DD HH:mm')
+            pos_plusneg = race['start_position'] - race['finish_position']
+            position = f"{race['start_position']} -> {race['finish_position']} ({'+' if pos_plusneg > 0 else ''}{pos_plusneg})"
+            
+            embed= discord.Embed(title="Placeholder", color=0x00ff00)
+            embed.add_field(name="Series", value=race['series_name'])
+            embed.add_field(name="Track", value=race['track']['track_name'])
+            embed.add_field(name='Start Time', value=start_time)
+            embed.add_field(name='Winner', value=race['winner_name'])
+            embed.add_field(name='Position', value=position)
+            embed.add_field(name="Fastest Lap", value='Not Implemented')
+            embed.add_field(name="SoF", value=race['strength_of_field'])
+            embed.add_field(name='Laps', value=race['laps'])
+            embed.add_field(name='Laps Lead', value=race['laps_led'])
+            embed.add_field(name='Incidents', value=race['incidents'])
+            
+            return embed
+            
+        
     @commands.has_permissions(administrator=True)
     @commands.command()
     async def setnotificationchannel(self, ctx, *args):
@@ -69,15 +95,8 @@ class Events(commands.Cog):
             f'{args[0]}_channel_id': ctx.channel.id
         }).eq('guild_id', ctx.guild.id).execute()
         await ctx.send(f'{args[0]} notifcation channel set to {ctx.channel.name}')
-
-    @commands.command()
-    async def getresults(self, ctx):
-        pass
     
-    @commands.command()
-    async def gethostedresults(self, ctx):
-        pass
-
+    
     
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -91,8 +110,11 @@ class Events(commands.Cog):
         }).execute()
         await ctx.send(f'Now searching for event {event_name}. Results will show when the session concludes.')
     
-    
-    async def create_hosted_event(ctx, subsession_id):
+    @commands.command()
+    async def latestrace(self, ctx):
+        driver_id = self.supa.table('drivers').select('iracing_number').eq('discord_user_id', ctx.author.id).execute()
+        races = await self.iracing.get_drivers_latest_races(driver_id.data[0]['iracing_number'])
+        await ctx.send(embed=self.embeds().latest_race(races['races'][0]))
         
         pass
 

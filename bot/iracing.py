@@ -138,4 +138,35 @@ class iRacing:
                     await self.authenticate()
                     await self.search_series(cust_id, start_time, end_time)
         
+    async def get_drivers_latest_races(self, cust_id):
+        """Gets the latest races from iRacing's API and returns the JSON response
+        
+        Args:
+            cust_id (int): iRacing customer ID
+            
+        Returns: 
+            json: JSON response of the drivers latest races
+        """
+        
+        self.cookies = self.cookies or {}
+        
+        async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
+            params = {
+                'cust_id': cust_id
+            }
+            async with session.get("https://members-ng.iracing.com/data/stats/member_recent_races", params=params) as response:
+                if response.status == 401:
+                    await self.authenticate()
+                    await self.get_drivers_latest_races(cust_id)
+                if response.status != 200:
+                    print(f'Error fetching users {cust_id} latest race from iRacing API: {response.status}')
+                    
+                latest_races = await self.click_thru_url(await response.json())
+                #print(json.dumps(latest_races, indent=4))
+                
+                return latest_races
+                    
+        
+                    
+                #print(await response.json())
         
