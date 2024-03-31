@@ -111,12 +111,15 @@ class Events(commands.Cog):
         await ctx.send(f'Now searching for event {event_name}. Results will show when the session concludes.')
     
     @commands.command()
-    async def latestrace(self, ctx):
+    async def latestrace(self, ctx, *args):
         driver_id = self.supa.table('drivers').select('iracing_number').eq('discord_user_id', ctx.author.id).execute()
+        if driver_id.data is None:
+            await ctx.send('You have not registered your iRacing driver ID. Use the `driver register` command to register.')
+            return
         races = await self.iracing.get_drivers_latest_races(driver_id.data[0]['iracing_number'])
         await ctx.send(embed=self.embeds().latest_race(races['races'][0]))
         
-        pass
+    
 
     #@commands.command()
     @tasks.loop(seconds=0, minutes=4, hours= 0, count=None)
