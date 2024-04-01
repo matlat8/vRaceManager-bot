@@ -15,6 +15,7 @@ class iRacing:
     async def authenticate(self):
         
         body = {'email': os.environ.get("IRACING_USERNAME"), 'password': await self.encode_pw()}
+        print('we just authenticated!')
         
         async with aiohttp.ClientSession() as session:
             async with session.post('https://members-ng.iracing.com/auth', data=body) as response:
@@ -165,8 +166,50 @@ class iRacing:
                 #print(json.dumps(latest_races, indent=4))
                 
                 return latest_races
-                    
+    async def subsession_lapdata(self, subsession_id):
+        """Gets lap data from a specific subsession ID
+
+        Args:
+            subsession_id (int): iRacing subsession ID
+
+        Returns:
+            json: JSON response of the lap data
+        """
+        def add_attributes(data, subsession_id, simsession_number):
+            #print(data)
+            for obj in data:
+                for lap in obj:
+                    lap['subsession_id'] = subsession_id
+                    lap['simsession_number'] = simsession_number
+            return data
         
+        self.cookies = self.cookies or {}
+        simsessions = [-2, -1, 0]
+        
+        data = []
+        
+        async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
+            for simsession in simsessions:
+                params = {'subsession_id': subsession_id, 'simsession_number': simsession}
+                async with session.get(f"https://members-ng.iracing.com/data/results/lap_chart_data", params=params) as response:
+                    if response.status == 404:
+                        print(f'unable to find subsession lap data for subsession {subsession_id}, simsession {simsession}')
+                        continue
+                    if response.status == 401:
+                        print('we need to reauth')
+                        await self.authenticate()
+                        await self.subsession_lapdata(subsession_id)
+                    if response.status == 200:
+                        link_all_laps = await self.click_thru_url(await response.json())
+                        
+                        lap_data = await self.unchunk_url(link_all_laps['chunk_info'])
+                        add_attributes(lap_data, subsession_id, simsession)
+                        for chunk in lap_data:
+                            data.append(chunk)
+
+                    else:
+                        print(f"Failed to get subsession lap data: {response.status}")
+                        #return {}
                     
-                #print(await response.json())
+            return data
         

@@ -18,7 +18,8 @@ class Events(commands.Cog):
         self.iracing = iRacing()
         self.bot = bot
         self.supa = Supa(os.environ.get('SUPABASE_URL'), os.environ.get('SUPABASE_KEY')).get_supabase()
-        self.search_for_events.start()
+        #self.search_for_events.start()
+        self.lapdata_datapull.start()
         
     class embeds():
         def session_completed(self, data):
@@ -119,7 +120,13 @@ class Events(commands.Cog):
         races = await self.iracing.get_drivers_latest_races(driver_id.data[0]['iracing_number'])
         await ctx.send(embed=self.embeds().latest_race(races['races'][0]))
         
-    
+    @tasks.loop(seconds=0, minutes=5, hours=0, count=None)
+    async def lapdata_datapull(self):
+        laps_to_pull = self.supa.table('series_entries').select('subsession_id').eq('has_lapdata', False).execute()
+        for subsession in laps_to_pull.data:
+            await self.get_subsession_lapdata(subsession['subsession_id'])
+            
+        #print(laps_to_pull.data)
 
     #@commands.command()
     @tasks.loop(seconds=0, minutes=4, hours= 0, count=None)
@@ -216,6 +223,36 @@ class Events(commands.Cog):
         
         #print(guild_ids.data)
         pass
+    
+    async def get_subsession_lapdata(self, subsession_id):
+        lapdata_list = await self.iracing.subsession_lapdata(subsession_id)
+        pass
+    
+    async def insert_lapdata(self, lapdata_list):
+        final_data = []
+        for chunk in lapdata_list: 
+            for lap in chunk:
+                row = {
+                    'subsession_id': lap['subsession_id'],
+                    'group_id': lap['group_id'],
+                    'lap_number': lap['lap_number'],
+                    'cust_id': lap['cust_id'],
+                    'display_name': lap['display_name'],
+                    'flags': lap['flags'],
+                    'incident': lap['incident'],
+                    'session_time': lap['session_time'],
+                    'lap_time': lap['lap_time'],
+                    'lap_events': lap['lap_events'],
+                    'lap_position': lap['lap_position'],
+                    'interval': lap['interval'],
+                    'fastest_lap': lap['fastest_lap'],
+                    'simsession_number': lap['simsession_number'],
+                }
+                final_data.append(row)
+                    
+        
+        data = self.supa.table('lap_data').upsert(final_data).execute()
+        print(data.data)
             
     async def cog_unload(self):
         self.search_for_events.cancel()
