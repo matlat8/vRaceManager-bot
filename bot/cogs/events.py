@@ -226,7 +226,7 @@ class Events(commands.Cog):
     
     async def get_subsession_lapdata(self, subsession_id):
         lapdata_list = await self.iracing.subsession_lapdata(subsession_id)
-        pass
+        await self.insert_lapdata(lapdata_list)
     
     async def insert_lapdata(self, lapdata_list):
         final_data = []
