@@ -5,6 +5,7 @@ import discord
 import os
 import json
 import datetime
+from postgrest import exceptions as postexceptions
 
 
 
@@ -18,14 +19,14 @@ class Events(commands.Cog):
         self.iracing = iRacing()
         self.bot = bot
         self.supa = Supa(os.environ.get('SUPABASE_URL'), os.environ.get('SUPABASE_KEY')).get_supabase()
-        #self.search_for_events.start()
-        self.lapdata_datapull.start()
+        self.search_for_events.start()
+        #self.lapdata_datapull.start()
         
     class embeds():
         def session_completed(self, data):
             start_time = arrow.get(data['start_time']).format('YYYY-MM-DD HH:mm')
             end_time = arrow.get(data['end_time']).format('YYYY-MM-DD HH:mm')
-            pos_plusneg = data['starting_position'] - data['finish_position']
+            pos_plusneg = (data['starting_position'] - data['finish_position']) + 1
             
             time_delta = datetime.timedelta(seconds=data['event_best_lap_time'] / 10000)
             minutes = time_delta.seconds // 60
@@ -250,8 +251,12 @@ class Events(commands.Cog):
                 }
                 final_data.append(row)
                     
-        
-        data = self.supa.table('lap_data').upsert(final_data).execute()
+        try:
+            data = self.supa.table('lap_data').upsert(final_data).execute()
+        except postexceptions.APIError as e:
+            print(e)
+            return
+            
         print(data.data)
             
     async def cog_unload(self):
