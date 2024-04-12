@@ -147,10 +147,12 @@ async def driver(ctx, *args: str):
     # if the first argument is register
     if args[0] == 'register':
         await command.execute(ctx, args[1])
+        return
     # if the first argument is lookup
     if args[0] == 'lookup':
         lookup_string = ' '.join(args[1:])
         await command.lookup(lookup_string)
+        return
         #await ctx.send('Lookup command not implemented yet.')
     if args[0] == 'events':
         await command.recent_events(ctx, args)
