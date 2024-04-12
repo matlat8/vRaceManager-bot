@@ -15,6 +15,7 @@ class iRacing:
     async def authenticate(self):
         
         body = {'email': os.environ.get("IRACING_USERNAME"), 'password': await self.encode_pw()}
+        print('we just authenticated!')
         
         async with aiohttp.ClientSession() as session:
             async with session.post('https://members-ng.iracing.com/auth', data=body) as response:
@@ -138,4 +139,76 @@ class iRacing:
                     await self.authenticate()
                     await self.search_series(cust_id, start_time, end_time)
         
+    async def get_drivers_latest_races(self, cust_id):
+        """Gets the latest races from iRacing's API and returns the JSON response
+        
+        Args:
+            cust_id (int): iRacing customer ID
+            
+        Returns: 
+            json: JSON response of the drivers latest races
+        """
+        
+        self.cookies = self.cookies or {}
+        
+        async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
+            params = {
+                'cust_id': cust_id
+            }
+            async with session.get("https://members-ng.iracing.com/data/stats/member_recent_races", params=params) as response:
+                if response.status == 401:
+                    await self.authenticate()
+                    await self.get_drivers_latest_races(cust_id)
+                if response.status != 200:
+                    print(f'Error fetching users {cust_id} latest race from iRacing API: {response.status}')
+                    
+                latest_races = await self.click_thru_url(await response.json())
+                #print(json.dumps(latest_races, indent=4))
+                
+                return latest_races
+    async def subsession_lapdata(self, subsession_id):
+        """Gets lap data from a specific subsession ID
+
+        Args:
+            subsession_id (int): iRacing subsession ID
+
+        Returns:
+            json: JSON response of the lap data
+        """
+        def add_attributes(data, subsession_id, simsession_number):
+            #print(data)
+            for obj in data:
+                for lap in obj:
+                    lap['subsession_id'] = subsession_id
+                    lap['simsession_number'] = simsession_number
+            return data
+        
+        self.cookies = self.cookies or {}
+        simsessions = [-2, -1, 0]
+        await self.authenticate()
+        data = []
+        for simsession in simsessions:
+            async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
+                params = {'subsession_id': subsession_id, 'simsession_number': simsession}
+                async with session.get(f"https://members-ng.iracing.com/data/results/lap_chart_data", params=params) as response:
+                    print(response.status)
+                    if response.status == 401:
+                        print('we need to reauth')
+                        await self.authenticate()
+                        return await self.subsession_lapdata(subsession_id)
+                    if response.status == 404:
+                        print(f'unable to find subsession lap data for subsession {subsession_id}, simsession 0')
+                        #continue
+                    if response.status == 200:
+                        link_all_laps = await self.click_thru_url(await response.json())
+                        lap_data = await self.unchunk_url(link_all_laps['chunk_info'])
+                        add_attributes(lap_data, subsession_id, simsession)
+                        for chunk in lap_data:
+                            data.append(chunk)
+                    else:
+                        print(f"Failed to get subsession lap data: {response.status} {await response.text()}")
+                        break
+                        #return {}
+                
+        return data
         
