@@ -26,7 +26,7 @@ class Events(commands.Cog):
         def session_completed(self, data):
             start_time = arrow.get(data['start_time']).format('YYYY-MM-DD HH:mm')
             end_time = arrow.get(data['end_time']).format('YYYY-MM-DD HH:mm')
-            pos_plusneg = (data['starting_position'] - data['finish_position']) + 1
+            pos_plusneg = data['starting_position'] - data['finish_position']
             
             time_delta = datetime.timedelta(seconds=data['event_best_lap_time'] / 10000)
             minutes = time_delta.seconds // 60
@@ -43,7 +43,7 @@ class Events(commands.Cog):
             embed.add_field(name="Start Time", value=start_time, inline=True)
             embed.add_field(name="End Time", value=end_time, inline=True)
             embed.add_field(name='Winner', value=f"{data['winner_name']}", inline=False)
-            embed.add_field(name="Position", value=f"{data['starting_position']} -> {data['finish_position']} ({'+' if pos_plusneg > 0 else ''}{pos_plusneg})", inline=True)
+            embed.add_field(name="Position", value=f"{data['starting_position']  + 1} -> {data['finish_position'] + 1} ({'+' if pos_plusneg > 0 else ''}{pos_plusneg})", inline=True)
             embed.add_field(name="Fastest Lap", value=f"{minutes}:{seconds:02}.{milliseconds:03}", inline = True)
             embed.add_field(name="SoF", value=data['event_strength_of_field'], inline=True)
             embed.add_field(name='Laps', value=data['laps_complete'], inline = True)
