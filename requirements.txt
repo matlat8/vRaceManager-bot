@@ -4,3 +4,8 @@ python-dotenv
 asynctest
 pytest
 arrow
+psycopg2-binary
+pandas
+numpy
+matplotlib
+seaborn

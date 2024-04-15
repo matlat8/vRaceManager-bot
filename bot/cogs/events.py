@@ -7,11 +7,14 @@ import json
 import datetime
 from postgrest import exceptions as postexceptions
 
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 # import locals
 from iracing import iRacing
-from supa import Supa
+from supa import Supa, SupaDB
 from version import __version__
 
 class Events(commands.Cog):
@@ -19,7 +22,8 @@ class Events(commands.Cog):
         self.iracing = iRacing()
         self.bot = bot
         self.supa = Supa(os.environ.get('SUPABASE_URL'), os.environ.get('SUPABASE_KEY')).get_supabase()
-        self.search_for_events.start()
+        #self.search_for_events.start()
+        self.supadb = SupaDB('postgres', 'public')
         #self.lapdata_datapull.start()
         
     class embeds():
@@ -114,12 +118,84 @@ class Events(commands.Cog):
     
     @commands.command()
     async def latestrace(self, ctx, *args):
-        driver_id = self.supa.table('drivers').select('iracing_number').eq('discord_user_id', ctx.author.id).execute()
-        if driver_id.data is None:
-            await ctx.send('You have not registered your iRacing driver ID. Use the `driver register` command to register.')
+        
+        # Get your personal driver id
+        if not args:
+            driver_id = self.supa.table('drivers').select('iracing_number').eq('discord_user_id', ctx.author.id).execute()
+            if driver_id.data is None:
+                await ctx.send('You have not registered your iRacing driver ID. Use the `driver register (iRacing ID)` command to register.')
+        if type(args[0]) == int:
+            driver_id = args[0]
+        
+        #races = await self.iracing.get_drivers_latest_races(driver_id.data[0]['iracing_number'])
+        #await ctx.send(embed=self.embeds().latest_race(races['races'][0]))
+        await ctx.send('This command has been disabled temporarily.')
+        
+    @commands.command()
+    async def lapstats(self, ctx, *args):
+        # discord args-> subsession_id
+        if not args:
+            await ctx.send('You need to submit a subsession id to get lap statistics.')
             return
-        races = await self.iracing.get_drivers_latest_races(driver_id.data[0]['iracing_number'])
-        await ctx.send(embed=self.embeds().latest_race(races['races'][0]))
+            
+        subsession = args[0]
+        db = self.supadb.conn()
+        sql = """
+        select
+            lap_number,
+            display_name,
+            lap_time / 10000::float as lap_time,
+            lap_events,
+            lap_position,
+            interval / 10000::float as interval,
+            fastest_lap
+        from lap_data
+            where subsession_id = 68091147
+            AND simsession_number in (0)
+            and cust_id = 940362
+            AND lap_number >= 1
+        order by 
+            simsession_number, lap_number
+            """
+        #cur = db.cursor()
+        #cur.execute(sql)
+        #data = cur.fetchall()
+        df = pd.read_sql_query(sql, db)
+        #await ctx.send('\``' + df.to_string() + '\`')
+        await self.laptime_chart(df, ctx)
+        print(df)
+        
+    async def laptime_chart(self, df, ctx):
+        
+        df['lap_number'] = df['lap_number'].astype(int)
+        
+        fig, ax = plt.subplots(figsize=(25,6))
+        sns.lineplot(data=df, x='lap_number', y='lap_time', ax=ax, color='red', linewidth=2.5)
+        ax.set_title('Lap Times')
+        ax.set_xlabel('Lap Number')
+        ax.set_ylabel('Lap Time')
+
+        # Set the x-axis ticks to increment by 1
+        ax.set_xticks(range(min(df['lap_number']), max(df['lap_number'])+1, 1))
+
+        # Create a table with lap times
+        table_data = df[['lap_number', 'lap_time']].copy()
+        table_data['lap_time'] = table_data['lap_time'].apply(lambda x: f"{int(x//60)}:{int(x%60):02d}.{int((x%1)*1000):03d}")
+        table_data = table_data.values.tolist()  # Use the formatted 'lap_time' values
+        table_data.insert(0, ['Lap Number', 'Lap Time'])  # Add column headers
+        table = plt.table(cellText=table_data, cellLoc='center', loc='right', colWidths=[0.05, 0.1], fontsize=14)
+
+        # Adjust layout to make room for the table
+        plt.subplots_adjust(right=0.8)
+
+        # Save the plot as an image file
+        plt.savefig('lap_times.png')
+
+        await ctx.send(file=discord.File('lap_times.png'))
+        os.remove('lap_times.png')
+        
+        
+        
         
     @tasks.loop(seconds=0, minutes=5, hours=0, count=None)
     async def lapdata_datapull(self):
@@ -203,6 +279,7 @@ class Events(commands.Cog):
         if final_insert:
             data = self.supa.table('series_entries').upsert(final_insert).execute()
             #print(data)
+    
             
     async def send_race_completion_message(self, session):
         guild_ids = self.supa.table('drivers').select('guild_id').eq('iracing_number', session['cust_id']).execute()
