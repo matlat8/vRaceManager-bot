@@ -139,10 +139,15 @@ class Events(commands.Cog):
             return
         if len(args) <= 1:
             await ctx.send('Invalid subsession ID or iRacing ID was submitted. Please try again.')
-        if type(args[0]) != int:
+        args = list(args)
+        if not args[0].isdigit():
+            print(type(args[0]))
             await ctx.send('Invalid subsession ID submitted. Please try again.')
-        if type(args[1]) != int:
+        else: args[0] = int(args[0])
+        if not args[1].isdigit():
             await ctx.send('Invalid customer ID was submitted. Please try again')
+        else: args[1] = int(args[1])
+        args = tuple(args)
             
         subsession = args[0]
         cust_id = args[1]
@@ -167,15 +172,21 @@ class Events(commands.Cog):
             """.format(subsession=subsession, cust_id=cust_id)
 
         df = pd.read_sql_query(sql, db)
+        if df.empty:
+            await ctx.send('No lap data found for this session in the vRaceManager database.')
+            await ctx.send('This feature is still new. This will be accounted for in the future')
+            return
         #await ctx.send('\``' + df.to_string() + '\`')
-        await self.laptime_chart(df, ctx)
-        print(df)
+        groups = df.groupby(df.index // 40)
+        for name, group in groups:
+            await self.laptime_chart(group, ctx)
+        #print(df)
         
     async def laptime_chart(self, df, ctx):
         df['lap_number'] = df['lap_number'].astype(int)
 
-        fig, ax = plt.subplots(figsize=(25,6))
-        sns.regplot(data=df, x='lap_number', y='lap_time', ax=ax, color='red', line_kws={'color': 'blue'})
+        fig, ax = plt.subplots(figsize=(25,8))
+        sns.lineplot(data=df, x='lap_number', y='lap_time', ax=ax, color='red')
         ax.set_title('Lap Times')
         ax.set_xlabel('Lap Number')
         ax.set_ylabel('Lap Time')
