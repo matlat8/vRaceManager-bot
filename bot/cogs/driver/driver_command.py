@@ -21,7 +21,7 @@ class DriverCommand(commands.Cog):
         
     
     @commands.command()
-    async def latestraces(self, ctx, *args):
+    async def latestrace(self, ctx, *args):
         # Get the drivers ID 
         driver_id = await self.queries.get_driver_by_discordid(ctx.author.id)
         print(driver_id)

@@ -22,7 +22,7 @@ class DriverEmbed():
         embed.add_field(name='Laps Led', value=data['laps_led'], inline=True)
         embed.add_field(name='', value='', inline=False)
         embed.add_field(name='+/- iRating', value=data['newi_rating'] - data['oldi_rating'], inline=True)
-        embed.add_field(name='+/- Safety Rating', value=data['new_sub_level'] - data['old_sub_level'], inline=True)
+        #embed.add_field(name='+/- Safety Rating', value=data['new_sub_level'] - data['old_sub_level'], inline=True)
         
         return embed
         
