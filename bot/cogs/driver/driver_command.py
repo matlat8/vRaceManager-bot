@@ -41,7 +41,7 @@ class DriverCommand(commands.Cog):
         # Get the drivers lap data
         lap_data = await self.queries.get_subsession_lapdata_for_custid(subsession_id, driver_id[0])
         await ctx.send(embed=embed)
-        filename = self.charts.create_laptime_chart(lap_data, ctx)
+        filename = self.charts.create_laptime_chart(lap_data)
         await ctx.send(file=discord.File(filename))
         os.remove(filename)
         
