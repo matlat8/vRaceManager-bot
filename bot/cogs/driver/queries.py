@@ -1,4 +1,4 @@
-
+import pandas as pd
 
 class DriverQueries():
     def __init__(self, db):
@@ -43,4 +43,27 @@ class DriverQueries():
         cur.execute(query)
         return cur.fetchone()
         
-        
+    async def get_subsession_lapdata_for_custid(self, subsession_id, cust_id) -> pd.DataFrame:
+        conn = self.db.conn()
+        cur = conn.cursor()
+        sql = """
+        select
+            lap_number,
+            display_name,
+            lap_time / 10000::float as lap_time,
+            lap_events,
+            lap_position,
+            interval / 10000::float as interval,
+            fastest_lap
+        from lap_data
+            where subsession_id = {subsession}
+            AND simsession_number in (0)
+            AND lap_number >= 1
+            AND cust_id = {cust_id}
+        order by 
+            simsession_number, lap_number
+            """.format(subsession=subsession_id, cust_id=cust_id)
+            
+        df = pd.read_sql_query(sql, conn)
+            
+        return df

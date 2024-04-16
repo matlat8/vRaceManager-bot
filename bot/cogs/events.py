@@ -142,9 +142,7 @@ class Events(commands.Cog):
             await ctx.send('No lap data found for this session in the vRaceManager database.')
             await ctx.send('This feature is still new. This will be accounted for in the future')
             return
-        #await ctx.send('\``' + df.to_string() + '\`')
-        #groups = df.groupby('display_name')
-        #for name, group in groups:
+
         await self.laptime_chart(df, ctx)
         #print(df)
         
