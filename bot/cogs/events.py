@@ -22,7 +22,7 @@ class Events(commands.Cog):
         self.iracing = iRacing()
         self.bot = bot
         self.supa = Supa(os.environ.get('SUPABASE_URL'), os.environ.get('SUPABASE_KEY')).get_supabase()
-        #self.search_for_events.start()
+        self.search_for_events.start()
         self.supadb = SupaDB('postgres', 'public')
         #self.lapdata_datapull.start()
         
