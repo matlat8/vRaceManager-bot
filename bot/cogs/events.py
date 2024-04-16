@@ -57,30 +57,6 @@ class Events(commands.Cog):
             embed.set_footer(text=f"Subsession ID: {data['subsession_id']} - Current UTC: {arrow.utcnow().format('YYYY-MM-DD HH:mm')}")
             return embed
         
-        def latest_race(self, race: json):
-            """Create an embed that can be returned and sent in a discord channel
-
-            Args:
-                race (json): API Payload from member_recent_races API endpoint
-            """
-            print(json.dumps(race, indent=4))
-            start_time = arrow.get(race['session_start_time']).format('YYYY-MM-DD HH:mm')
-            pos_plusneg = race['start_position'] - race['finish_position']
-            position = f"{race['start_position']} -> {race['finish_position']} ({'+' if pos_plusneg > 0 else ''}{pos_plusneg})"
-            
-            embed= discord.Embed(title="Placeholder", color=0x00ff00)
-            embed.add_field(name="Series", value=race['series_name'])
-            embed.add_field(name="Track", value=race['track']['track_name'])
-            embed.add_field(name='Start Time', value=start_time)
-            embed.add_field(name='Winner', value=race['winner_name'])
-            embed.add_field(name='Position', value=position)
-            embed.add_field(name="Fastest Lap", value='Not Implemented')
-            embed.add_field(name="SoF", value=race['strength_of_field'])
-            embed.add_field(name='Laps', value=race['laps'])
-            embed.add_field(name='Laps Lead', value=race['laps_led'])
-            embed.add_field(name='Incidents', value=race['incidents'])
-            
-            return embed
             
         
     @commands.has_permissions(administrator=True)
@@ -115,21 +91,7 @@ class Events(commands.Cog):
             'requestor_discord_id': ctx.author.id
         }).execute()
         await ctx.send(f'Now searching for event {event_name}. Results will show when the session concludes.')
-    
-    @commands.command()
-    async def latestrace(self, ctx, *args):
-        
-        # Get your personal driver id
-        if not args:
-            driver_id = self.supa.table('drivers').select('iracing_number').eq('discord_user_id', ctx.author.id).execute()
-            if driver_id.data is None:
-                await ctx.send('You have not registered your iRacing driver ID. Use the `driver register (iRacing ID)` command to register.')
-        if type(args[0]) == int:
-            driver_id = args[0]
-        
-        #races = await self.iracing.get_drivers_latest_races(driver_id.data[0]['iracing_number'])
-        #await ctx.send(embed=self.embeds().latest_race(races['races'][0]))
-        await ctx.send('This command has been disabled temporarily.')
+
         
     @commands.command()
     async def lapstats(self, ctx, *args):
@@ -144,13 +106,17 @@ class Events(commands.Cog):
             print(type(args[0]))
             await ctx.send('Invalid subsession ID submitted. Please try again.')
         else: args[0] = int(args[0])
-        if not args[1].isdigit():
-            await ctx.send('Invalid customer ID was submitted. Please try again')
-        else: args[1] = int(args[1])
+        if len(args) > 1:
+            if not args[1].isdigit():
+                pass
+                #await ctx.send('Invalid customer ID was submitted. Please try again')
+            else: 
+                args[1] = int(args[1])
+                cust_id = args[1] or None
+        else: cust_id = None
         args = tuple(args)
             
         subsession = args[0]
-        cust_id = args[1]
         
         db = self.supadb.conn()
         sql = """
@@ -165,8 +131,8 @@ class Events(commands.Cog):
         from lap_data
             where subsession_id = {subsession}
             AND simsession_number in (0)
-            and cust_id = {cust_id}
             AND lap_number >= 1
+            AND cust_id = {cust_id}
         order by 
             simsession_number, lap_number
             """.format(subsession=subsession, cust_id=cust_id)
@@ -176,23 +142,26 @@ class Events(commands.Cog):
             await ctx.send('No lap data found for this session in the vRaceManager database.')
             await ctx.send('This feature is still new. This will be accounted for in the future')
             return
-        #await ctx.send('\``' + df.to_string() + '\`')
-        groups = df.groupby(df.index // 40)
-        for name, group in groups:
-            await self.laptime_chart(group, ctx)
+
+        await self.laptime_chart(df, ctx)
         #print(df)
         
     async def laptime_chart(self, df, ctx):
         df['lap_number'] = df['lap_number'].astype(int)
+        sns.set_theme()
 
         fig, ax = plt.subplots(figsize=(25,8))
-        sns.lineplot(data=df, x='lap_number', y='lap_time', ax=ax, color='red')
+        sns.lineplot(data=df, x='lap_number', y='lap_time', hue='display_name', ax=ax)
         ax.set_title('Lap Times')
         ax.set_xlabel('Lap Number')
         ax.set_ylabel('Lap Time')
 
         # Set the x-axis ticks to increment by 1
         ax.set_xticks(range(min(df['lap_number']), max(df['lap_number'])+1, 1))
+        
+        # Set the y-axis limits to be the average lap time plus and minus 10
+        avg_lap_time = df['lap_time'].mean()
+        ax.set_ylim(bottom=avg_lap_time - 5, top=avg_lap_time + 20)
         
         # Set the y-axis limits to remove whitespace
         ax.set_xlim(left=min(df['lap_number']) - .5, right=max(df['lap_number']))

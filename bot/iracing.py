@@ -212,3 +212,17 @@ class iRacing:
                 
         return data
         
+    async def get_member_recent_races(self, cust_id):
+        await self.authenticate()
+        self.cookies = self.cookies or {}
+        params = {'cust_id': cust_id}
+        async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
+            async with session.get(f"https://members-ng.iracing.com/data/stats/member_recent_races", params=params) as response:
+                print(response.status)
+                if response.status != 200:
+                    await self.authenticate()
+                    await self.get_member_recent_races(cust_id)
+                if response.status == 200:
+                    print(await response.json())
+                    return await self.click_thru_url(await response.json())
+        
