@@ -10,6 +10,8 @@ from cogs.stats import Stats
 from cogs.events import Events
 from version import __version__
 
+from cogs.driver import DriverCommand
+
 #load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
 
@@ -24,6 +26,7 @@ async def on_ready():
     print(f'{bot.user} has connected to Discord!')
     await bot.add_cog(Stats(bot))
     await bot.add_cog(Events(bot))
+    await bot.add_cog(DriverCommand(bot))
 
 
 bot.add_command(driver.driver)

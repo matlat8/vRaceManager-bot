@@ -22,7 +22,7 @@ class Events(commands.Cog):
         self.iracing = iRacing()
         self.bot = bot
         self.supa = Supa(os.environ.get('SUPABASE_URL'), os.environ.get('SUPABASE_KEY')).get_supabase()
-        self.search_for_events.start()
+        #self.search_for_events.start()
         self.supadb = SupaDB('postgres', 'public')
         #self.lapdata_datapull.start()
         
@@ -144,13 +144,17 @@ class Events(commands.Cog):
             print(type(args[0]))
             await ctx.send('Invalid subsession ID submitted. Please try again.')
         else: args[0] = int(args[0])
-        if not args[1].isdigit():
-            await ctx.send('Invalid customer ID was submitted. Please try again')
-        else: args[1] = int(args[1])
+        if len(args) > 1:
+            if not args[1].isdigit():
+                pass
+                #await ctx.send('Invalid customer ID was submitted. Please try again')
+            else: 
+                args[1] = int(args[1])
+                cust_id = args[1] or None
+        else: cust_id = None
         args = tuple(args)
             
         subsession = args[0]
-        cust_id = args[1]
         
         db = self.supadb.conn()
         sql = """
@@ -165,8 +169,8 @@ class Events(commands.Cog):
         from lap_data
             where subsession_id = {subsession}
             AND simsession_number in (0)
-            and cust_id = {cust_id}
             AND lap_number >= 1
+            AND cust_id = {cust_id}
         order by 
             simsession_number, lap_number
             """.format(subsession=subsession, cust_id=cust_id)
@@ -177,22 +181,27 @@ class Events(commands.Cog):
             await ctx.send('This feature is still new. This will be accounted for in the future')
             return
         #await ctx.send('\``' + df.to_string() + '\`')
-        groups = df.groupby(df.index // 40)
-        for name, group in groups:
-            await self.laptime_chart(group, ctx)
+        #groups = df.groupby('display_name')
+        #for name, group in groups:
+        await self.laptime_chart(df, ctx)
         #print(df)
         
     async def laptime_chart(self, df, ctx):
         df['lap_number'] = df['lap_number'].astype(int)
+        sns.set_theme()
 
         fig, ax = plt.subplots(figsize=(25,8))
-        sns.lineplot(data=df, x='lap_number', y='lap_time', ax=ax, color='red')
+        sns.lineplot(data=df, x='lap_number', y='lap_time', hue='display_name', ax=ax)
         ax.set_title('Lap Times')
         ax.set_xlabel('Lap Number')
         ax.set_ylabel('Lap Time')
 
         # Set the x-axis ticks to increment by 1
         ax.set_xticks(range(min(df['lap_number']), max(df['lap_number'])+1, 1))
+        
+        # Set the y-axis limits to be the average lap time plus and minus 10
+        avg_lap_time = df['lap_time'].mean()
+        ax.set_ylim(bottom=avg_lap_time - 5, top=avg_lap_time + 20)
         
         # Set the y-axis limits to remove whitespace
         ax.set_xlim(left=min(df['lap_number']) - .5, right=max(df['lap_number']))
