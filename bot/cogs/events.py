@@ -177,10 +177,10 @@ class Events(commands.Cog):
         plt.subplots_adjust(right=0.8)
 
         # Save the plot as an image file
-        plt.savefig('lap_times.png')
+        plt.savefig('lap_time.png')
 
-        await ctx.send(file=discord.File('lap_times.png'))
-        os.remove('lap_times.png')
+        await ctx.send(file=discord.File('lap_time.png'))
+        os.remove('lap_time.png')
         
         
         
