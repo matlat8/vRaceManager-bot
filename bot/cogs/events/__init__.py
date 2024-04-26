@@ -1,0 +1,1 @@
+from cogs.events.events_command import EventCommand
