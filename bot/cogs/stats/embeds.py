@@ -10,5 +10,5 @@ class StatsEmbeds():
     def laps_per_track(self, data):
         embed = discord.embeds.Embed(title='Laps per Track')
         for row in data:
-            embed.add_field(name=row['track_name'], value=row['laps_driven'])
+            embed.add_field(name=row[1], value=row[0])
         return embed
