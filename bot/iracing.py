@@ -225,4 +225,16 @@ class iRacing:
                 if response.status == 200:
                     print(await response.json())
                     return await self.click_thru_url(await response.json())
+                
+    async def get_lap_data(self):
+        await self.authenticate()
+        self.cookies = self.cookies or {}
+        params = {'subsession_id': 68358423, 'simsession_number': 0, 'cust_id': 692190}
+        async with aiohttp.ClientSession(cookies=dict(self.cookies)) as session:
+            async with session.get(f"https://members-ng.iracing.com/data/results/lap_data", params=params) as response:
+                if response.status == 200:
+                    return await self.click_thru_url(await response.json())
+                else:
+                    print(f"Failed to get lap data: {response.status}")
+                    return {}
         

@@ -6,12 +6,13 @@ from dotenv import load_dotenv
 import asyncio
 
 import driver
-from cogs.stats import Stats
+#from cogs.stats import Stats
 #from cogs.events import Events
 from version import __version__
 
 from cogs.driver import DriverCommand
 from cogs.events import EventCommand
+from cogs.stats import StatsCommand
 
 #load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
@@ -25,10 +26,11 @@ bot = commands.Bot(command_prefix=os.environ.get('DISCORD_COMMAND_PREFIX'), inte
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
-    await bot.add_cog(Stats(bot))
+    #await bot.add_cog(Stats(bot))
 #    await bot.add_cog(Events(bot))
     await bot.add_cog(DriverCommand(bot))
     await bot.add_cog(EventCommand(bot))
+    await bot.add_cog(StatsCommand(bot))
 
 
 bot.add_command(driver.driver)

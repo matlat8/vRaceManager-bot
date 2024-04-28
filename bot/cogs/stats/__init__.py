@@ -1,0 +1,1 @@
+from cogs.stats.stats_command import StatsCommand

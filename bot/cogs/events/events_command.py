@@ -4,16 +4,20 @@ from discord.ext import commands, tasks
 # Import locals
 from .queries import EventQueries
 from supa import SupaDB
+from clickhouse import Clickhouse
 
 class EventCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.supadb = SupaDB('postgres', 'public')
-        self.queries = EventQueries(self.supadb)
+        self.ch = Clickhouse()
+        self.queries = EventQueries(self.supadb, self.ch)
         
         
     @commands.command()
     async def racelapdata(self, ctx, *args):
+        if not args:
+            await ctx.send('You must specify a subsession ID')
         
         
         await ctx.send('This is a placeholder command for the racelapdata command.')
